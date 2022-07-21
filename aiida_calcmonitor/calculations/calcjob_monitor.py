@@ -3,8 +3,7 @@ Calculations provided by calcjob_monitor.
 """
 from aiida.common import datastructures
 from aiida.engine import CalcJob
-from aiida.orm import SinglefileData
-from aiida.plugins import DataFactory
+from aiida.orm import Dict
 
 
 class CalcjobMonitor(CalcJob):
@@ -24,15 +23,14 @@ class CalcjobMonitor(CalcJob):
             "num_machines": 1,
             "num_mpiprocs_per_machine": 1,
         }
-        spec.inputs["metadata"]["options"]["parser_name"].default = "diff"
 
         # new ports
         spec.input(
             "metadata.options.output_filename", valid_type=str, default="patch.diff"
         )
         spec.input(
-            "parameters",
-            valid_type=DiffParameters,
+            "instructions",
+            valid_type=Dict,
             help="Command line parameters for diff",
         )
         spec.input(
