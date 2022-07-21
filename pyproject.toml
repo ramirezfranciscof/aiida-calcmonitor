@@ -5,10 +5,10 @@ build-backend = "flit_core.buildapi"
 
 [project]
 # See https://www.python.org/dev/peps/pep-0621/
-name = "aiida-diff"
-dynamic = ["version"]  # read from aiida_diff/__init__.py
-description = "AiiDA demo plugin that wraps the `diff` executable for computing the difference between two files."
-authors = [{name = "The AiiDA Team"}]
+name = "aiida-calcmonitor"
+dynamic = ["version"]  # read from aiida_calcmonitor/__init__.py
+description = "Description pending."
+authors = [{name = "FFR"}]
 readme = "README.md"
 license = {file = "LICENSE"}
 classifiers = [
@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.urls]
-Source = "https://github.com/aiidateam/aiida-diff"
+Source = "https://github.com/ramirezfranciscof/aiida-calcmonitor"
 
 [project.optional-dependencies]
 testing = [
@@ -49,20 +49,17 @@ docs = [
     "markupsafe<2.1"
 ]
 
-[project.entry-points."aiida.data"]
-"diff" = "aiida_diff.data:DiffParameters"
-
 [project.entry-points."aiida.calculations"]
-"diff" = "aiida_diff.calculations:DiffCalculation"
+"calcjob_monitor" = "aiida_diff.calculations.calcjob_monitor:CalcjobMonitor"
 
 [project.entry-points."aiida.parsers"]
-"diff" = "aiida_diff.parsers:DiffParser"
+"calcjob_monitor" = "aiida_diff.parsers.calcjob_monitor:CalcjobMonitorParser"
 
 [project.entry-points."aiida.cmdline.data"]
-"diff" = "aiida_diff.cli:data_cli"
+"aiida-calcmonitor" = "aiida_diff.cli:root"
 
 [tool.flit.module]
-name = "aiida_diff"
+name = "aiida_calcmonitor"
 
 [tool.pylint.format]
 max-line-length = 125
@@ -89,7 +86,7 @@ filterwarnings = [
 [tool.coverage.run]
 # Configuration of [coverage.py](https://coverage.readthedocs.io)
 # reporting which lines of your plugin are covered by tests
-source=["aiida_diff"]
+source=["aiida_calcmonitor"]
 
 [tool.isort]
 # Configuration of [isort](https://isort.readthedocs.io)

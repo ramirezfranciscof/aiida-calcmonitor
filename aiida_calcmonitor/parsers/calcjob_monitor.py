@@ -1,7 +1,5 @@
 """
-Parsers provided by aiida_diff.
-
-Register parsers via the "aiida.parsers" entry point in setup.json.
+Parsers provided by calcjob_monitor.
 """
 from aiida.common import exceptions
 from aiida.engine import ExitCode
@@ -9,10 +7,9 @@ from aiida.orm import SinglefileData
 from aiida.parsers.parser import Parser
 from aiida.plugins import CalculationFactory
 
-DiffCalculation = CalculationFactory("diff")
+CalcjobMonitor = CalculationFactory("calcjob_monitor")
 
-
-class DiffParser(Parser):
+class CalcjobMonitorParser(Parser):
     """
     Parser class for parsing output of calculation.
     """

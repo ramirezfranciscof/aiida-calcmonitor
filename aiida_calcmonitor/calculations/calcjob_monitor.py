@@ -1,17 +1,13 @@
 """
-Calculations provided by aiida_diff.
-
-Register calculations via the "aiida.calculations" entry point in setup.json.
+Calculations provided by calcjob_monitor.
 """
 from aiida.common import datastructures
 from aiida.engine import CalcJob
 from aiida.orm import SinglefileData
 from aiida.plugins import DataFactory
 
-DiffParameters = DataFactory("diff")
 
-
-class DiffCalculation(CalcJob):
+class CalcjobMonitor(CalcJob):
     """
     AiiDA calculation plugin wrapping the diff executable.
 
