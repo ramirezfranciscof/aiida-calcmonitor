@@ -1,16 +1,15 @@
 """
 Calculations provided by calcjob_monitor.
 """
+import json
 from aiida.common import datastructures
 from aiida.engine import CalcJob
-from aiida.orm import Dict
+from aiida.orm import Dict, RemoteData
 
 
 class CalcjobMonitor(CalcJob):
     """
-    AiiDA calculation plugin wrapping the diff executable.
-
-    Simple AiiDA plugin wrapper for 'diffing' two files.
+    AiiDA calculation plugin for monitoring other jobs.
     """
 
     @classmethod
@@ -23,33 +22,28 @@ class CalcjobMonitor(CalcJob):
             "num_machines": 1,
             "num_mpiprocs_per_machine": 1,
         }
-
+        spec.input("metadata.options.input_filename",  valid_type=str, default="monitor_input.json")
+        spec.input("metadata.options.output_filename", valid_type=str, default="monitor_report.out")
+        spec.input('metadata.options.withmpi', valid_type=bool, default=True)
+        
         # new ports
         spec.input(
-            "metadata.options.output_filename", valid_type=str, default="patch.diff"
-        )
-        spec.input(
-            "instructions",
+            "options",
             valid_type=Dict,
-            help="Command line parameters for diff",
+            help="options for the live monitor code",
         )
         spec.input(
-            "file1", valid_type=SinglefileData, help="First file to be compared."
+            "monitor_folder",
+            valid_type=RemoteData,
+            help="remote data to track",
         )
-        spec.input(
-            "file2", valid_type=SinglefileData, help="Second file to be compared."
-        )
-        spec.output(
-            "diff",
-            valid_type=SinglefileData,
-            help="diff between file1 and file2.",
-        )
+        #spec.output("report", valid_type=Dict, help="report from the monitor.")
 
-        spec.exit_code(
-            300,
-            "ERROR_MISSING_OUTPUT_FILES",
-            message="Calculation did not produce all expected output files.",
-        )
+        #spec.exit_code(
+        #    300,
+        #    "ERROR_MISSING_OUTPUT_FILES",
+        #    message="Calculation did not produce all expected output files.",
+        #)
 
     def prepare_for_submission(self, folder):
         """
@@ -60,9 +54,7 @@ class CalcjobMonitor(CalcJob):
         :return: `aiida.common.datastructures.CalcInfo` instance
         """
         codeinfo = datastructures.CodeInfo()
-        codeinfo.cmdline_params = self.inputs.parameters.cmdline_params(
-            file1_name=self.inputs.file1.filename, file2_name=self.inputs.file2.filename
-        )
+        codeinfo.cmdline_params = [self.metadata.options.input_filename]
         codeinfo.code_uuid = self.inputs.code.uuid
         codeinfo.stdout_name = self.metadata.options.output_filename
         codeinfo.withmpi = self.inputs.metadata.options.withmpi
@@ -70,18 +62,13 @@ class CalcjobMonitor(CalcJob):
         # Prepare a `CalcInfo` to be returned to the engine
         calcinfo = datastructures.CalcInfo()
         calcinfo.codes_info = [codeinfo]
-        calcinfo.local_copy_list = [
-            (
-                self.inputs.file1.uuid,
-                self.inputs.file1.filename,
-                self.inputs.file1.filename,
-            ),
-            (
-                self.inputs.file2.uuid,
-                self.inputs.file2.filename,
-                self.inputs.file2.filename,
-            ),
-        ]
+        calcinfo.local_copy_list = []
         calcinfo.retrieve_list = [self.metadata.options.output_filename]
+
+
+        instructions = self.inputs.options.get_dict()
+        instructions['calcjob_uuid'] = self.inputs.monitor_folder.creator.uuid
+        with folder.open(self.metadata.options.input_filename, 'w') as handle:
+            handle.write(json.dumps(instructions))
 
         return calcinfo

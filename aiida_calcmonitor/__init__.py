@@ -1,7 +1,7 @@
 """
-aiida_diff
+aiida-calcmonitor
 
-AiiDA demo plugin that wraps the `diff` executable for computing the difference between two files.
+Plugin to do live monitoring of other calculations.
 """
 
 __version__ = "2.0.0"

@@ -1,5 +1,5 @@
 """
-Command line interface (cli) for aiida_diff.
+Command line interface (cli) for aiida_monitor.
 
 Register new commands either via the "console_scripts" entry point or plug them
 directly into the 'verdi' command by using AiiDA-specific entry points like
@@ -17,9 +17,9 @@ from aiida.plugins import DataFactory
 
 
 # See aiida.cmdline.data entry point in setup.json
-@verdi_data.group("diff")
+@verdi_data.group("monitor")
 def data_cli():
-    """Command line interface for aiida-diff"""
+    """Command line interface for calcjob monitor"""
 
 
 @data_cli.command("list")
@@ -28,17 +28,7 @@ def list_():  # pylint: disable=redefined-builtin
     """
     Display all DiffParameters nodes
     """
-    DiffParameters = DataFactory("diff")
-
-    qb = QueryBuilder()
-    qb.append(DiffParameters)
-    results = qb.all()
-
-    s = ""
-    for result in results:
-        obj = result[0]
-        s += f"{str(obj)}, pk: {obj.pk}\n"
-    sys.stdout.write(s)
+    print('not ready')
 
 
 @data_cli.command("export")
