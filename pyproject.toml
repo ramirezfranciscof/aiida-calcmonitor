@@ -53,8 +53,8 @@ docs = [
 "calcmonitor.calcjob_monitor" = "aiida_calcmonitor.calculations.calcjob_monitor:CalcjobMonitor"
 "calcmonitor.test_calcjob" = "aiida_calcmonitor.calculations.test_calcjob:TestCalcjob"
 
-[project.entry-points."aiida.parsers"]
-"calcmonitorcalcjob_monitor" = "aiida_calcmonitor.parsers.calcjob_monitor:CalcjobMonitorParser"
+[project.entry-points."aiida.data"]
+"calcmonitor.monitor.toymodel" = "aiida_calcmonitor.data.monitors.monitor_toymodel:MonitorToymodel"
 
 [project.entry-points."aiida.cmdline.data"]
 "aiida-calcmonitor" = "aiida_calcmonitor.cli:root"

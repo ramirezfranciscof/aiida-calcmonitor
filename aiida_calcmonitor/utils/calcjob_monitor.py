@@ -11,12 +11,30 @@ from aiida import orm
 from aiida.common.exceptions import NotExistent
 from aiida.cmdline.commands import cmd_process
 
-def monitor_calcjob(calcjob_uuid):
+def monitor_calcjob(input_filename):
     """Monitors AiiDA calcjob"""
 
-    monitor_calcjob = True
+    with open(input_filename) as fileobj:
+        input_parameters = json.load(fileobj)
 
-    while monitor_calcjob:
+    calcjob_uuid = input_parameters['calcjob_uuid']
+    monitor_list = [orm.load_node(uuid) for uuid in input_parameters['monitor_uuidlist']]
+
+    filerate_dict = {}
+    for monitor_node in monitor_list:
+        for filedata in monitor_node['sources'].values():
+            source_path = filedata['filepath']
+            refresh_rate = filedata['refresh_rate']
+            if source_path in filerate_dict:
+                filerate_dict[source_path] = min(refresh_rate, filerate_dict[source_path])
+            else:
+                filerate_dict[source_path] = refresh_rate
+
+    min_refresh = min(filerate_dict.values())
+
+    keep_monitoring = True
+
+    while keep_monitoring:
 
         calcjob = orm.load_node(calcjob_uuid)
 
@@ -30,47 +48,37 @@ def monitor_calcjob(calcjob_uuid):
         if not remote_workdir:
             print('no remote work directory for this calcjob, maybe the daemon did not submit it yet')
 
-        target_file = 'tester.out'
-        remote_path = remote_workdir + "/" + target_file
-        local_path = os.getcwd() + "/" + target_file
-        with transport:
-            transport.get(remote_path, local_path)
-        result = parse_output(target_file)
-        if result is not None:
-            print(result)
-            runner = CliRunner()
-            result = runner.invoke(cmd_process.process_kill, [calcjob_uuid])
+        # REFRESH
+        for filepath, filerate in filerate_dict.items():
 
-        time.sleep(10)
-        monitor_calcjob = monitor_calcjob and not calcjob.is_finished
-        monitor_calcjob = monitor_calcjob and not calcjob.is_terminated
+            local_path = os.getcwd() + "/" + filepath
+            if os.path.exists(local_path):
+                time_i = os.path.getmtime(local_path)
+                time_f = time.time()
+                delta_t = time_f - time_i
+                refresh_file = delta_t > filerate
+            else:
+                refresh_file = True
+                
+            if refresh_file:
+                remote_path = remote_workdir + "/" + filepath
+                with transport:
+                    transport.get(remote_path, local_path)
 
+        # MONITOR
+        for monitor_node in monitor_list:
+            result = monitor_node.monitor_analysis()
+            if result is not None:
+                print(f'SIGNAL FROM MONITOR `{monitor_node.entry_point.name}`:\n{result}')
+                runner = CliRunner()
+                result = runner.invoke(cmd_process.process_kill, [calcjob_uuid])
 
-####################################################################################################
-def parse_output(output_filepath):
-    with open(output_filepath, "rb") as fileobj:
-        try:
-            fileobj.seek(-2, os.SEEK_END)
-            while fileobj.read(1) != b'\n':
-                fileobj.seek(-2, os.SEEK_CUR)
-        except OSError:
-            fileobj.seek(0)
-        last_line = fileobj.readline().decode()
-    last_data = last_line.split()
-    if int(last_data[2]) >= 6:
-        print('value exceeded! ' + last_data[2])
-        return 'value exceeded!'
-    else:
-        print('value under control: '+last_data[2])
-        return None
+        time.sleep(min_refresh) # this is in seconds
+        keep_monitoring = keep_monitoring and not calcjob.is_finished
+        keep_monitoring = keep_monitoring and not calcjob.is_terminated
 
 
 ####################################################################################################
 if __name__ == "__main__":
-
-    input_filename = sys.argv[1]
-    with open(input_filename) as fileobj:
-        input_parameters = json.load(fileobj)
-    
-    monitor_calcjob(input_parameters['calcjob_uuid'])
+    monitor_calcjob(input_filename = sys.argv[1])
 ####################################################################################################

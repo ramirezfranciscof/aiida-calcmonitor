@@ -25,12 +25,13 @@ class CalcjobMonitor(CalcJob):
         spec.input("metadata.options.input_filename",  valid_type=str, default="monitor_input.json")
         spec.input("metadata.options.output_filename", valid_type=str, default="monitor_report.out")
         spec.input('metadata.options.withmpi', valid_type=bool, default=True)
-        
+
         # new ports
-        spec.input(
-            "options",
+        spec.input_namespace(
+            'monitor_protocols',
             valid_type=Dict,
-            help="options for the live monitor code",
+            dynamic=True,
+            help="dict with different monitor protocols",
         )
         spec.input(
             "monitor_folder",
@@ -65,9 +66,10 @@ class CalcjobMonitor(CalcJob):
         calcinfo.local_copy_list = []
         calcinfo.retrieve_list = [self.metadata.options.output_filename]
 
-
-        instructions = self.inputs.options.get_dict()
+        instructions = {}
         instructions['calcjob_uuid'] = self.inputs.monitor_folder.creator.uuid
+        instructions['monitor_uuidlist'] = [node.uuid for node in self.inputs.monitor_protocols.values()]
+
         with folder.open(self.metadata.options.input_filename, 'w') as handle:
             handle.write(json.dumps(instructions))
 
