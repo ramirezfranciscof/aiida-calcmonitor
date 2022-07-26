@@ -25,7 +25,11 @@ class MonitorToymodel(MonitorBase):  # pylint: disable=too-many-ancestors
             last_line = fileobj.readline().decode()
             
         last_data = last_line.split()
-        if int(last_data[2]) >= 6:
+        if len(last_data) < 3:
+            return None
+        
+        elapsed_seconds = int(last_data[2])
+        if elapsed_seconds >= options.get('max_elapsed_seconds', 30):
             print('value exceeded! ' + last_data[2])
             return 'value exceeded!'
 

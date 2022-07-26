@@ -38,13 +38,6 @@ class CalcjobMonitor(CalcJob):
             valid_type=RemoteData,
             help="remote data to track",
         )
-        #spec.output("report", valid_type=Dict, help="report from the monitor.")
-
-        #spec.exit_code(
-        #    300,
-        #    "ERROR_MISSING_OUTPUT_FILES",
-        #    message="Calculation did not produce all expected output files.",
-        #)
 
     def prepare_for_submission(self, folder):
         """
@@ -65,6 +58,11 @@ class CalcjobMonitor(CalcJob):
         calcinfo.codes_info = [codeinfo]
         calcinfo.local_copy_list = []
         calcinfo.retrieve_list = [self.metadata.options.output_filename]
+        
+        for node in self.inputs.monitor_protocols.values():
+            for filepath in node.get_dict()['retrieve']:
+                if filepath not in calcinfo.retrieve_list:
+                    calcinfo.retrieve_list.append(filepath)
 
         instructions = {}
         instructions['calcjob_uuid'] = self.inputs.monitor_folder.creator.uuid

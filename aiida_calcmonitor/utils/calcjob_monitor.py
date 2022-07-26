@@ -20,6 +20,7 @@ def monitor_calcjob(input_filename):
     calcjob_uuid = input_parameters['calcjob_uuid']
     monitor_list = [orm.load_node(uuid) for uuid in input_parameters['monitor_uuidlist']]
 
+    # Get the minimal filerate for each file
     filerate_dict = {}
     for monitor_node in monitor_list:
         for filedata in monitor_node['sources'].values():
@@ -59,11 +60,14 @@ def monitor_calcjob(input_filename):
                 refresh_file = delta_t > filerate
             else:
                 refresh_file = True
-                
+
             if refresh_file:
                 remote_path = remote_workdir + "/" + filepath
                 with transport:
-                    transport.get(remote_path, local_path)
+                    try:
+                        transport.get(remote_path, local_path)
+                    except IOError as exception:
+                        print(f'error trying to get file {filepath}, ignored')
 
         # MONITOR
         for monitor_node in monitor_list:
@@ -77,6 +81,18 @@ def monitor_calcjob(input_filename):
         keep_monitoring = keep_monitoring and not calcjob.is_finished
         keep_monitoring = keep_monitoring and not calcjob.is_terminated
 
+    # Get the list of all files to be retrieved
+    retrieve_list = []
+    for monitor_node in monitor_list():
+        for filepath in monitor_node.get_dict()['retrieve']:
+            if filepath not in retrieve_list:
+                retrieve_list.append(filepath)
+
+    with transport:
+        for filepath in retrieve_list:
+            local_path = os.getcwd() + "/" + filepath
+            remote_path = remote_workdir + "/" + filepath
+            transport.get(remote_path, local_path)
 
 ####################################################################################################
 if __name__ == "__main__":
