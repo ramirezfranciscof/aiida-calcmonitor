@@ -73,7 +73,8 @@ def monitor_calcjob(input_filename):
         for monitor_node in monitor_list:
             result = monitor_node.monitor_analysis()
             if result is not None:
-                print(f'SIGNAL FROM MONITOR `{monitor_node.entry_point.name}`:\n{result}')
+                # print(f'SIGNAL FROM MONITOR `{monitor_node.entry_point.name}`:\n{result}')
+                print(f'SIGNAL FROM MONITOR:\n{result}')
                 runner = CliRunner()
                 result = runner.invoke(cmd_process.process_kill, [calcjob_uuid])
 
@@ -83,7 +84,7 @@ def monitor_calcjob(input_filename):
 
     # Get the list of all files to be retrieved
     retrieve_list = []
-    for monitor_node in monitor_list():
+    for monitor_node in monitor_list:
         for filepath in monitor_node.get_dict()['retrieve']:
             if filepath not in retrieve_list:
                 retrieve_list.append(filepath)

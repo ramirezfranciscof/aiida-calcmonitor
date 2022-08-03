@@ -14,11 +14,14 @@ class MonitorTomatoDummy(MonitorBase):  # pylint: disable=too-many-ancestors
 
         filepath = sources['output']['filepath']
 
+        if not os.path.isfile(filepath):
+            return None
+
         with open(filepath, "rb") as fileobj:
             jsdata = json.load(fileobj)
         
         last_ts = jsdata["steps"][0]["data"][-1]
-        last_val = last_ts["raw"]["value"]
+        last_val = last_ts["raw"]["value"]["n"]
         print(f'value under control: {last_val}')
 
         max_val = options.get("maximum_value", 10)
