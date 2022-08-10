@@ -52,6 +52,9 @@ docs = [
 "calcmonitor.calcjob_monitor" = "aiida_calcmonitor.calculations.calcjob_monitor:CalcjobMonitor"
 "calcmonitor.toymodel_calcjob" = "aiida_calcmonitor.calculations.toymodel_calcjob:ToymodelCalcjob"
 
+[project.entry-points.'aiida.parsers']
+'calcmonitor.cycler' = 'aiida_calcmonitor.parsers.cycler_monitor:TomatoMonitorParser'
+
 [project.entry-points."aiida.data"]
 "calcmonitor.monitor.toymodel" = "aiida_calcmonitor.data.monitors.monitor_toymodel:MonitorToymodel"
 

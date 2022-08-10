@@ -38,6 +38,11 @@ class CalcjobMonitor(CalcJob):
             valid_type=RemoteData,
             help="remote data to track",
         )
+        spec.output_namespace(
+            'redirected_outputs',
+            dynamic=True
+        )
+
 
     def prepare_for_submission(self, folder):
         """
