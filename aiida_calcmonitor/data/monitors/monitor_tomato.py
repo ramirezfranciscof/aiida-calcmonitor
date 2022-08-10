@@ -44,7 +44,7 @@ class MonitorTomatoBioLogic(MonitorBase):
 
         options:
             check_type: str = Literal["discharge_capacity", "charge_capacity", "voltage_drift"]
-            previous_cycles: int = 2
+            consecutive_cycles: int = 2
             threshold: float = 0.8
 
     """
@@ -108,12 +108,11 @@ class MonitorTomatoBioLogic(MonitorBase):
         # trigger conditions based on check_type
         if options.get("check_type") in {"discharge_capacity", "charge_capacity"}:
             print(f"Completed {len(Qs)} cycles.")
-            if len(Qs) >= options.get("previous_cycles") + 1:
+            if len(Qs) >= options.get("consecutive_cycles") + 1:
                 below_thresh = Qs < options.get("threshold", 0.8) * Qs[0]
-                print(below_thresh)
                 below_groups = [sum(1 for _ in g) for k, g in itertools.groupby(below_thresh) if k]
                 for g in below_groups:
-                    if g > options.get("previous_cycles"):
+                    if g > options.get("consecutive_cycles"):
                         return f'Below threshold for {g} cycles!'
             return None
         else:
