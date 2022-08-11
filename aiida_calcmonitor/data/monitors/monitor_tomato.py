@@ -51,7 +51,7 @@ class MonitorTomatoBioLogic(MonitorBase):
 
     def monitor_analysis(self):
 
-        def get_capacities(data: list[dict], discharge=True) -> list[float]:
+        def get_capacities(data, discharge=True):
             uts, Ewe, I, cn,  Qc, Qd = [], [], [], [], [], []
             # extract raw data
             for ts in data:

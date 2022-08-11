@@ -23,6 +23,7 @@ keywords = ["aiida", "plugin"]
 requires-python = ">=3.8"
 dependencies = [
     "aiida-core>=1.6,<3",
+    "numpy"
 ]
 
 [project.urls]
@@ -58,6 +59,7 @@ docs = [
 [project.entry-points."aiida.data"]
 "calcmonitor.monitor.toymodel" = "aiida_calcmonitor.data.monitors.monitor_toymodel:MonitorToymodel"
 "calcmonitor.monitor.tomatodummy" = "aiida_calcmonitor.data.monitors.monitor_tomato:MonitorTomatoDummy"
+"calcmonitor.monitor.tomatobiologic" = "aiida_calcmonitor.data.monitors.monitor_tomato:MonitorTomatoBioLogic"
 
 [project.entry-points."aiida.cmdline.data"]
 "aiida-calcmonitor" = "aiida_calcmonitor.cli:root"
