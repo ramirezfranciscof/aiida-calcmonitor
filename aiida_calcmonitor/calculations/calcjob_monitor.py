@@ -63,11 +63,16 @@ class CalcjobMonitor(CalcJob):
         calcinfo.codes_info = [codeinfo]
         calcinfo.local_copy_list = []
         calcinfo.retrieve_list = [self.metadata.options.output_filename]
+        calcinfo.retrieve_temporary_list = []
         
         for node in self.inputs.monitor_protocols.values():
             for filepath in node.get_dict()['retrieve']:
                 if filepath not in calcinfo.retrieve_list:
                     calcinfo.retrieve_list.append(filepath)
+        for node in self.inputs.monitor_protocols.values():
+            for filepath in node.get_dict()['retrieve_temporary']:
+                if filepath not in calcinfo.retrieve_temporary_list:
+                    calcinfo.retrieve_temporary_list.append(filepath)
 
         instructions = {}
         instructions['calcjob_uuid'] = self.inputs.monitor_folder.creator.uuid
