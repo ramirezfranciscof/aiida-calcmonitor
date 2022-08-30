@@ -43,34 +43,39 @@ class TomatoMonitorParser(Parser):
         :returns: an exit code, if parsing fails (or nothing if parsing succeeds)
         """
         retrieved_temporary_folder = kwargs["retrieved_temporary_folder"]
-        #output_json_filename = self.node.get_option("output_filename") + ".json"
-        output_json_filename = 'results.json'
-        output_zip_filename = 'results.zip'
-#        output_json_filename = self.node.get_option("output_filename") + ".json"
-#        output_zip_filename = os.path.join(
-#            retrieved_temporary_folder, self.node.get_option("output_filename") + ".zip"
-#        )
+        output_rename = None
+        for key_name, data_node in self.node.inputs.monitor_protocols.items():
+            options = data_node.get_dict()['options']
+            output_rename = options.get('output_rename', None)
+            if output_rename is not None:
+                break
+        
+        output_json_filename = output_rename + ".json"
+        output_json_filename = self.node.get_option("output_filename") + ".json"
+        output_zip_filename = os.path.join(
+            retrieved_temporary_folder, output_rename + ".zip"
+        )
 
         files_retrieved = self.retrieved.list_object_names()
         output_dict = {}
 
         # Check that zip file is present
-#        if os.path.isfile(output_zip_filename):
-#            try:
-#                self.logger.debug(f"Storing '{output_zip_filename}'")
-#                output_raw_data_node = SinglefileData(output_zip_filename)
-#                output_dict["raw_data"] = output_raw_data_node
-#                output_raw_data_node_created = True
-#            except Exception:
-#                self.logger.warning(
-#                    f"The raw data zip file '{output_zip_filename}' could not be read."
-#                )
-#                output_raw_data_node_created = False
-#        else:
-#            self.logger.warning(
-#                f"The raw data zip file '{output_zip_filename}' is missing."
-#            )
-#            output_raw_data_node_created = False
+        if os.path.isfile(output_zip_filename):
+            try:
+                self.logger.debug(f"Storing '{output_zip_filename}'")
+                output_raw_data_node = SinglefileData(output_zip_filename)
+                output_dict["raw_data"] = output_raw_data_node
+                output_raw_data_node_created = True
+            except Exception:
+                self.logger.warning(
+                    f"The raw data zip file '{output_zip_filename}' could not be read."
+                )
+                output_raw_data_node_created = False
+        else:
+            self.logger.warning(
+                f"The raw data zip file '{output_zip_filename}' is missing."
+            )
+            output_raw_data_node_created = False
 
         # Check that json file is present
         if not output_json_filename in files_retrieved:

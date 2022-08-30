@@ -49,12 +49,15 @@ docs = [
     "markupsafe<2.1"
 ]
 
+[project.entry-points."aiida.workflows"]
+"calcmonitor.monitored_cycler" = "aiida_calcmonitor.workflows.monitored_cycler:MonitoredCyclerWorkChain"
+
 [project.entry-points."aiida.calculations"]
 "calcmonitor.calcjob_monitor" = "aiida_calcmonitor.calculations.calcjob_monitor:CalcjobMonitor"
 "calcmonitor.toymodel_calcjob" = "aiida_calcmonitor.calculations.toymodel_calcjob:ToymodelCalcjob"
 
 [project.entry-points.'aiida.parsers']
-'calcmonitor.cycler' = 'aiida_calcmonitor.parsers.cycler_monitor:TomatoMonitorParser'
+'calcmonitor.cycler' = 'aiida_calcmonitor.parsers.monitor_tomato:TomatoMonitorParser'
 
 [project.entry-points."aiida.data"]
 "calcmonitor.monitor.toymodel" = "aiida_calcmonitor.data.monitors.monitor_toymodel:MonitorToymodel"

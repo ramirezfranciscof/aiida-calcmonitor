@@ -63,11 +63,14 @@ def monitor_calcjob(input_filename):
 
             if refresh_file:
                 remote_path = remote_workdir + "/" + filepath
-                with transport:
-                    try:
-                        transport.get(remote_path, local_path)
-                    except IOError as exception:
-                        print(f'error trying to get file {filepath}, ignored')
+                try:
+                    with transport:
+                        try:
+                            transport.get(remote_path, local_path)
+                        except IOError as exception:
+                            print(f'error trying to get file {filepath}, ignored')
+                except Exception as error:
+                    print(f'error opening the transport of calcjob node {calcjob.pk}, ignored')
 
         # MONITOR
         for monitor_node in monitor_list:

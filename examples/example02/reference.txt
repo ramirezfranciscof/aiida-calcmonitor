@@ -1,0 +1,25 @@
+(tomato) root@aiida:~# ketchup status queue
+jobid  jobname              status (PID)     pipeline            
+=================================================================
+19     aiida-123            qw
+(tomato) root@aiida:~# ketchup status
+pipeline             ready jobid  (PID)     sampleid             
+===================================================================
+dummy-10             no    None             None                
+dummy-5              no    None             None                
+(tomato) root@aiida:~# ketchup load fake_sample dummy-5
+(tomato) root@aiida:~# ketchup status
+pipeline             ready jobid  (PID)     sampleid             
+===================================================================
+dummy-10             no    None             None                
+dummy-5              no    None             fake_sample         
+(tomato) root@aiida:~# ketchup ready dummy-5
+(tomato) root@aiida:~# ketchup status
+pipeline             ready jobid  (PID)     sampleid             
+===================================================================
+dummy-10             no    None             None                
+dummy-5              no    19     (25213)   fake_sample         
+(tomato) root@aiida:~# ketchup status queue
+jobid  jobname              status (PID)     pipeline            
+=================================================================
+19     aiida-123            r      25213   dummy-5             

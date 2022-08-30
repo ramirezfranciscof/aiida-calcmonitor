@@ -26,6 +26,10 @@ class CalcjobMonitor(CalcJob):
         spec.input("metadata.options.output_filename", valid_type=str, default="monitor_report.out")
         spec.input('metadata.options.withmpi', valid_type=bool, default=True)
 
+        spec.input('metadata.options.additional_retrieve_temp', required=False,
+            valid_type=(list, tuple),
+            help='List of relative file paths that should be retrieved temporarily in addition to what the plugin specifies.')
+
         # new ports
         spec.input_namespace(
             'monitor_protocols',
@@ -62,18 +66,13 @@ class CalcjobMonitor(CalcJob):
         calcinfo = datastructures.CalcInfo()
         calcinfo.codes_info = [codeinfo]
         calcinfo.local_copy_list = []
+
+        # The `retrieve_list` will be extended with the additional_retrieve_list by the engine automatically.
+        # The `retrieve_temporary_list` needs to be extended here.
         calcinfo.retrieve_list = [self.metadata.options.output_filename]
         calcinfo.retrieve_temporary_list = []
-        
-        for node in self.inputs.monitor_protocols.values():
-            for filepath in node.get_dict()['retrieve']:
-                if filepath not in calcinfo.retrieve_list:
-                    calcinfo.retrieve_list.append(filepath)
-        for node in self.inputs.monitor_protocols.values():
-            for filepath in node.get_dict()['retrieve_temporary']:
-                if filepath not in calcinfo.retrieve_temporary_list:
-                    calcinfo.retrieve_temporary_list.append(filepath)
-
+        calcinfo.retrieve_temporary_list.extend(self.node.get_option('additional_retrieve_temp') or [])
+    
         instructions = {}
         instructions['calcjob_uuid'] = self.inputs.monitor_folder.creator.uuid
         instructions['monitor_uuidlist'] = [node.uuid for node in self.inputs.monitor_protocols.values()]

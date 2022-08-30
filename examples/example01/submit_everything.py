@@ -26,6 +26,7 @@ monitor_protocol = ToymodelMonitor({
     'options': {},
     'retrieve': ['tester.out'],
 })
+
 MonitorCalcjob = CalculationFactory('calcmonitor.calcjob_monitor')
 monitor_builder = MonitorCalcjob.get_builder()
 monitor_builder.code = orm.load_code('monitor@localhost-aiida')
