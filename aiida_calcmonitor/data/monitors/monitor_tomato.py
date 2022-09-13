@@ -5,7 +5,7 @@ import os
 import json
 import numpy as np
 import itertools
-from aiida_calcmonitor.data.monitors.monitor_base import MonitorBase
+from aiida_calcmonitor.data.monitors.monitor_base import MonitorBase, MonitorError
 
 class MonitorTomatoDummy(MonitorBase):  # pylint: disable=too-many-ancestors
     """Example of monitor for a tomato's dummy job."""
@@ -85,8 +85,11 @@ class MonitorTomatoBioLogic(MonitorBase):
         filepath = sources['output']['filepath']
         if not os.path.isfile(filepath):
             return None
-        with open(filepath, "rb") as fileobj:
-            jsdata = json.load(fileobj)
+        try:
+            with open(filepath, "rb") as fileobj:
+                jsdata = json.load(fileobj)
+        except json.decoder.JSONDecodeError as exception:
+            raise MonitorError(f"Failed to load {filepath} JSON file.") from exception
             
         # calculate data based on check_type
         if options.get("check_type") == "discharge_capacity":
