@@ -51,34 +51,49 @@ class MonitorTomatoBioLogic(MonitorBase):
 
     def monitor_analysis(self):
 
-        def get_capacities(data, discharge=True):
-            uts, Ewe, I, cn,  Qc, Qd = [], [], [], [], [], []
+        def get_data_from_raw(jsdata):
+            "Extract raw data from json file."
+            if not isinstance(jsdata, dict):
+                raise TypeError('jsdata should be a dictionary')
+            if len(jsdata["steps"]) > 1:
+                raise NotImplementedError('Analysis of multiple steps is not implemented.')
+
+            raw_data = jsdata["steps"][0]["data"]
+
             # extract raw data
-            for ts in data:
-                uts.append(ts["uts"])
-                Ewe.append(ts["raw"]["Ewe"]["n"])
-                I.append(ts["raw"]["I"]["n"])
-                cn.append(ts["raw"]["cycle number"])
-            t0 = uts[0]
-            # convert to numpy arrays
-            t = np.array(uts) - t0
-            Ewe = np.array(Ewe)
-            I = np.array(I)
-            cn = np.array(cn)
+            t = np.array([ts["uts"] for ts in raw_data]) - raw_data[0]["uts"]
+            Ewe = np.array([ts["raw"]["Ewe"]["n"] for ts in raw_data])
+            I = np.array([ts["raw"]["I"]["n"] for ts in raw_data])
+            cn = np.array([ts["raw"]["cycle number"] for ts in raw_data])
+
             # find indices of sign changes in I
             idx = np.where(np.diff(np.sign(I)) != 0)[0]
+
             # integrate and store charge and discharge currents
-            for ii, ie in enumerate(idx[1:]):
-                i0 = idx[ii]
+            Qc, Qd = [], []
+            for ii in range(len(idx) - 1):
+                i0, ie = idx[ii], idx[ii+1]
                 q = np.trapz(I[i0:ie], t[i0:ie])
                 if q > 0:
                     Qc.append(q)
                 else:
-                    Qd.append(abs(q))            
+                    Qd.append(abs(q))
+            data = {
+                'time': t,
+                'Ewe': Ewe,
+                'I': I,
+                'cn': cn,
+                'time-cycles': t[idx[2::2]],
+                'Qd': np.array(Qd),
+                'Qc': np.array(Qc)
+            }
+            return data
+
+        def get_capacities(data_dic, discharge=True):
             if discharge:
-                return np.array(Qd)
+                return data_dic['Qd']
             else:
-                return np.array(Qc)
+                return data_dic['Qc']
 
         sources = self['sources']
         options = self['options']
@@ -93,21 +108,22 @@ class MonitorTomatoBioLogic(MonitorBase):
             
         # calculate data based on check_type
         if options.get("check_type") == "discharge_capacity":
-            Qs = get_capacities(jsdata["steps"][0]["data"], discharge=True)
+            Qs = get_capacities(get_data_from_raw(jsdata), discharge=True)
         elif options.get("check_type") == "charge_capacity":
-            Qs = get_capacities(jsdata["steps"][0]["data"], discharge=False)
+            Qs = get_capacities(get_data_from_raw(jsdata), discharge=False)
         else:
             raise RuntimeError(f"Provided {options.get('check_type')=} not understood.")
         
         # trigger conditions based on check_type
         if options.get("check_type") in {"discharge_capacity", "charge_capacity"}:
-            print(f"Completed {len(Qs)} cycles.")
+            print(f"Qs = {Qs[-1]} - Completed {len(Qs)} cycles.")
             if len(Qs) >= options.get("consecutive_cycles") + 1:
-                below_thresh = Qs < options.get("threshold", 0.8) * Qs[0]
+                Qs_thresh = options.get("threshold", 0.8) * Qs[0]
+                below_thresh = Qs < Qs_thresh
                 below_groups = [sum(1 for _ in g) for k, g in itertools.groupby(below_thresh) if k]
                 for g in below_groups:
                     if g > options.get("consecutive_cycles"):
-                        return f'Below threshold for {g} cycles!'
+                        return f"Below threshold for {g} cycles! (threshold: {Qs_thresh})"
             return None
         else:
             raise RuntimeError(f"Provided {options.get('check_type')=} not understood.")
