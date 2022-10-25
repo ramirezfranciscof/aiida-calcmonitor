@@ -50,8 +50,10 @@ class TomatoMonitorParser(Parser):
             if output_rename is not None:
                 break
         
-        output_json_filename = output_rename + ".json"
-        output_json_filename = self.node.get_option("output_filename") + ".json"
+        if output_rename:
+            output_json_filename = output_rename + ".json"
+        else:
+            output_json_filename = self.node.get_option("output_filename") + ".json"
         output_zip_filename = os.path.join(
             retrieved_temporary_folder, output_rename + ".zip"
         )

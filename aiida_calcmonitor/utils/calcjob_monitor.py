@@ -10,6 +10,7 @@ from click.testing import CliRunner
 from aiida import orm
 from aiida.common.exceptions import NotExistent
 from aiida.cmdline.commands import cmd_process
+from aiida_calcmonitor.data.monitors.monitor_base import MonitorError
 
 def monitor_calcjob(input_filename):
     """Monitors AiiDA calcjob"""
@@ -74,7 +75,11 @@ def monitor_calcjob(input_filename):
 
         # MONITOR
         for monitor_node in monitor_list:
-            result = monitor_node.monitor_analysis()
+            try:
+                result = monitor_node.monitor_analysis()
+            except MonitorError as exception:
+                print(f'error parsing a source file: {exception}. Ignored')
+                result = None
             if result is not None:
                 # print(f'SIGNAL FROM MONITOR `{monitor_node.entry_point.name}`:\n{result}')
                 print(f'SIGNAL FROM MONITOR:\n{result}')
