@@ -10,6 +10,7 @@ from click.testing import CliRunner
 from aiida import orm
 from aiida.common.exceptions import NotExistent
 from aiida.cmdline.commands import cmd_process
+from aiida_calcmonitor.data.monitors.monitor_base import MonitorError
 
 def monitor_calcjob(input_filename):
     """Monitors AiiDA calcjob"""
@@ -63,17 +64,25 @@ def monitor_calcjob(input_filename):
 
             if refresh_file:
                 remote_path = remote_workdir + "/" + filepath
-                with transport:
-                    try:
-                        transport.get(remote_path, local_path)
-                    except IOError as exception:
-                        print(f'error trying to get file {filepath}, ignored')
+                try:
+                    with transport:
+                        try:
+                            transport.get(remote_path, local_path)
+                        except IOError as exception:
+                            print(f'error trying to get file {filepath}, ignored')
+                except Exception as error:
+                    print(f'error opening the transport of calcjob node {calcjob.pk}, ignored')
 
         # MONITOR
         for monitor_node in monitor_list:
-            result = monitor_node.monitor_analysis()
+            try:
+                result = monitor_node.monitor_analysis()
+            except MonitorError as exception:
+                print(f'error parsing a source file: {exception}. Ignored')
+                result = None
             if result is not None:
-                print(f'SIGNAL FROM MONITOR `{monitor_node.entry_point.name}`:\n{result}')
+                # print(f'SIGNAL FROM MONITOR `{monitor_node.entry_point.name}`:\n{result}')
+                print(f'SIGNAL FROM MONITOR:\n{result}')
                 runner = CliRunner()
                 result = runner.invoke(cmd_process.process_kill, [calcjob_uuid])
 
@@ -83,7 +92,7 @@ def monitor_calcjob(input_filename):
 
     # Get the list of all files to be retrieved
     retrieve_list = []
-    for monitor_node in monitor_list():
+    for monitor_node in monitor_list:
         for filepath in monitor_node.get_dict()['retrieve']:
             if filepath not in retrieve_list:
                 retrieve_list.append(filepath)

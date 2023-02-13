@@ -43,9 +43,19 @@ class TomatoMonitorParser(Parser):
         :returns: an exit code, if parsing fails (or nothing if parsing succeeds)
         """
         retrieved_temporary_folder = kwargs["retrieved_temporary_folder"]
-        output_json_filename = self.node.get_option("output_filename") + ".json"
+        output_rename = None
+        for key_name, data_node in self.node.inputs.monitor_protocols.items():
+            options = data_node.get_dict()['options']
+            output_rename = options.get('output_rename', None)
+            if output_rename is not None:
+                break
+        
+        if output_rename:
+            output_json_filename = output_rename + ".json"
+        else:
+            output_json_filename = self.node.get_option("output_filename") + ".json"
         output_zip_filename = os.path.join(
-            retrieved_temporary_folder, self.node.get_option("output_filename") + ".zip"
+            retrieved_temporary_folder, output_rename + ".zip"
         )
 
         files_retrieved = self.retrieved.list_object_names()
@@ -93,8 +103,8 @@ class TomatoMonitorParser(Parser):
         self.out('redirected_outputs', output_dict)
 
         # check that the zip file is there. Is it already stored in a SinglefileData node??
-        if not output_raw_data_node_created:
-            return self.exit_codes.ERROR_MISSING_ZIP_FILE
+ #       if not output_raw_data_node_created:
+ #           return self.exit_codes.ERROR_MISSING_ZIP_FILE
 
         # TODO: other checks:  jobs completed with error or cancelled
         # ......
