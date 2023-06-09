@@ -1,2 +1,3 @@
 #!/bin/bash
-verdi -p quicksetup run submit_workchain.py
+PROFILE='default'
+verdi -p ${PROFILE} run submit_workchain.py

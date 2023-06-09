@@ -6,7 +6,7 @@ from aiida.plugins import WorkflowFactory
 
 from aiida_aurora.data import BatterySampleData, CyclingSpecsData, TomatoSettingsData
 from aurora.schemas.battery import BatterySample as BatterySampleSchema
-from aurora.schemas.cycling import Dummy, ElectroChemSequence
+from aurora.schemas.cycling import DummySequential, ElectroChemSequence
 from aurora.schemas.dgbowl_schemas import Tomato_0p2
 
 @calcfunction
@@ -27,7 +27,7 @@ def datanode_preparation():
 
     sample_node = BatterySampleData(sample.dict())
 
-    step = Dummy(technique="sequential")
+    step = DummySequential()
     step.parameters['time'].value = 10
     step.parameters['delay'].value = 1
     step.name = "Dummy-Sequential"
@@ -44,8 +44,8 @@ def datanode_preparation():
 # SUBMISSION
 
 data_nodes = datanode_preparation()
-cycler_code = orm.load_code('cycler@localhost-tomato')
-monitor_code = orm.load_code('calcjob_monitor@localhost-monitor')
+cycler_code = orm.load_code('ketchup-0.2rc2@localhost-tomato')
+monitor_code = orm.load_code('monitor@localhost-aiida')
 
 WorkflowClass = WorkflowFactory('calcmonitor.monitored_cycler')
 workflow_builder = WorkflowClass.get_builder_from_protocol(
@@ -56,5 +56,6 @@ workflow_builder = WorkflowClass.get_builder_from_protocol(
     control_settings = data_nodes['settings_node'],
     )
 
+workflow_builder.monitor.calcjob.metadata.options.parser_name = "calcmonitor.cycler"
 workflow_node = submit(workflow_builder)
 ################################################################################
