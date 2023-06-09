@@ -46,17 +46,22 @@ class TomatoMonitorParser(Parser):
         output_rename = None
         for key_name, data_node in self.node.inputs.monitor_protocols.items():
             options = data_node.get_dict()['options']
-            output_rename = options.get('output_rename', None)
-            if output_rename is not None:
+            if 'tomato_monitor_parser' in options:
+                monitor_options = options['tomato_monitor_parser']
+                filename_json = monitor_options.get('json', 'snapshot.json')
+                filename_zip = monitor_options.get('zip', 'snapshot.zip')
                 break
         
-        if output_rename:
-            output_json_filename = output_rename + ".json"
-        else:
-            output_json_filename = self.node.get_option("output_filename") + ".json"
-        output_zip_filename = os.path.join(
-            retrieved_temporary_folder, output_rename + ".zip"
-        )
+        if output_rename is None:
+            raise RuntimeError(
+                'Please add a `tomato_monitor_parser` option to the monitor_protocol '
+                'with a dict containing the names of the output files under the keys '
+                '`json` and `zip` (or leave empty dict for the default naming of '
+                '`snapshot.json` and `snapshot.zip`)'
+            )
+
+        output_json_filename = filename_json
+        output_zip_filename = os.path.join(retrieved_temporary_folder, filename_zip)
 
         files_retrieved = self.retrieved.list_object_names()
         output_dict = {}

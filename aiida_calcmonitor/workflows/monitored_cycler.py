@@ -8,12 +8,13 @@ import time
 from aiida import orm
 from aiida.common import AttributeDict
 from aiida.engine import ToContext, WorkChain, submit
-from aiida.plugins import CalculationFactory, DataFactory
+from aiida.plugins import WorkflowFactory, CalculationFactory, DataFactory
 
 TomatoCycler = CalculationFactory('aurora.cycler')
 TomatoMonitor = DataFactory('calcmonitor.monitor.tomatodummy')
 #TomatoMonitor = DataFactory('calcmonitor.monitor.tomatobiologic')
-CalcjobMonitor = CalculationFactory('calcmonitor.calcjob_monitor')
+#CalcjobMonitor = CalculationFactory('calcmonitor.calcjob_monitor')
+CalcjobMonitor = WorkflowFactory('calcmonitor.monitor_wrapper')
 
 class MonitoredCyclerWorkChain(WorkChain):
     """
@@ -25,7 +26,7 @@ class MonitoredCyclerWorkChain(WorkChain):
         # yapf: disable
         super().define(spec)
         spec.expose_inputs(TomatoCycler, namespace='cycler')
-        spec.expose_inputs(CalcjobMonitor, namespace='monitor', exclude=('monitor_folder',))
+        spec.expose_inputs(CalcjobMonitor, namespace='monitor', exclude=('target_uuid',))
         spec.outline(
             cls.monitored_launch,
             cls.results_gathering,
@@ -58,7 +59,6 @@ class MonitoredCyclerWorkChain(WorkChain):
         cycler_builder.metadata.options['resources'] = {'num_cores': 1} # WHY? This is not necessary when submitting alone
         workchain_builder.cycler = cycler_builder
 
-        print(control_settings.get_dict())
         # EXPECTED {'frequency': 10, 'prefix': 'snapshot'}
         refresh_rate = 10
         filename = 'snapshot'
@@ -69,16 +69,16 @@ class MonitoredCyclerWorkChain(WorkChain):
             'sources': {
                 'output': {'filepath': filename_json, 'refresh_rate': refresh_rate},
             },
-            'options': {},
+            'options': {'tomato_monitor_parser': {'json': filename_json, 'zip': filename_zip}},
             'retrieve': [filename_json, filename_zip], # this is read by the monitoring code
         })
 
         monitor_builder = CalcjobMonitor.get_builder()
-        monitor_builder.code = monitor_code
-        monitor_builder.monitor_protocols = {'monitor0': monitor_protocol}
-        monitor_builder.metadata.options.additional_retrieve_list = [filename_json]
-        monitor_builder.metadata.options.additional_retrieve_temp = [filename_zip]
-        monitor_builder.metadata.options['resources'] = {'num_machines': 1, 'num_mpiprocs_per_machine': 1} # WHY? This is not necessary when submitting alone
+        monitor_builder.calcjob.code = monitor_code
+        monitor_builder.calcjob.monitor_protocols = {'monitor0': monitor_protocol}
+        monitor_builder.calcjob.metadata.options.additional_retrieve_list = [filename_json]
+        monitor_builder.calcjob.metadata.options.additional_retrieve_temp = [filename_zip]
+        monitor_builder.calcjob.metadata.options['resources'] = {'num_machines': 1, 'num_mpiprocs_per_machine': 1} # WHY? This is not necessary when submitting alone
         workchain_builder.monitor = monitor_builder
 
         return workchain_builder
@@ -88,14 +88,10 @@ class MonitoredCyclerWorkChain(WorkChain):
         """TODO."""
         #from aiida.engine import append_
         calcjob_inputs = AttributeDict(self.exposed_inputs(TomatoCycler, namespace='cycler'))
-        #monitor_inputs = AttributeDict(self.exposed_inputs(CalcjobMonitor, namespace='monitor'))
-
         calcjob_node = self.submit(TomatoCycler, **calcjob_inputs)
-        await_calcjob = True
-        while await_calcjob:
-            time.sleep(0.1)
-            await_calcjob = not 'remote_folder' in calcjob_node.outputs
-        monitor_inputs.monitor_folder = calcjob_node.outputs.remote_folder
+
+        monitor_inputs = AttributeDict(self.exposed_inputs(CalcjobMonitor, namespace='monitor'))
+        monitor_inputs.target_uuid = orm.Str(calcjob_node.uuid)
         monitor_node = self.submit(CalcjobMonitor, **monitor_inputs)
 
         self.report(f'launching tomato calcjob <{calcjob_node.pk}> with monitor <{monitor_node.pk}>')
@@ -108,13 +104,19 @@ class MonitoredCyclerWorkChain(WorkChain):
     def results_gathering(self):
         """TODO."""
         monitor_calcjob = self.ctx.monitor_node
-        #original_calcjob = monitor_calcjob.inputs.monitor_folder.creator
-        
-        # if original_calcjob finished ok
-        # self.out('results',  original_calcjob.outputs.results)
-        # self.out('raw_data', original_calcjob.outputs.raw_data)
-        # else if it didn't
-        #self.out('results',  monitor_calcjob.outputs.results)
-        #self.out('raw_data', monitor_calcjob.outputs.raw_data)
+        original_calcjob = self.ctx.calcjob_node
+
+        if original_calcjob.is_killed:
+            self.report(f'calcjob <{original_calcjob.pk}> was killed by monitor')
+            #self.out('results',  monitor_calcjob.outputs.results)
+            #self.out('raw_data', monitor_calcjob.outputs.raw_data)
+
+        elif original_calcjob.is_finished_ok:
+            self.report(f'calcjob <{original_calcjob.pk}> finished fine')
+            self.out('results',  original_calcjob.outputs.results)
+            self.out('raw_data', original_calcjob.outputs.raw_data)
+
+        else:
+            raise RuntimeError('Problem')
 
         self.report(f'workchain <{original_calcjob.pk}> succesfully completed')

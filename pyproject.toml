@@ -50,6 +50,7 @@ docs = [
 ]
 
 [project.entry-points."aiida.workflows"]
+"calcmonitor.monitor_wrapper" = "aiida_calcmonitor.workflows.monitor_wrapper:MonitorWrapperWorkChain"
 "calcmonitor.monitored_cycler" = "aiida_calcmonitor.workflows.monitored_cycler:MonitoredCyclerWorkChain"
 
 [project.entry-points."aiida.calculations"]
